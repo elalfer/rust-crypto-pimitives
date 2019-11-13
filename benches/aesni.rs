@@ -17,6 +17,10 @@ fn bench_aes_128_ecb_enc(c: &mut Criterion) {
         aesni_ecb_enc(&mut ct, &pt, test_size/16, KeySize::K128, &key)
     ));
 
+    group.bench_function("aes_196_ecb_enc",|b| b.iter(||
+        aesni_ecb_enc(&mut ct, &pt, test_size/16, KeySize::K196, &key)
+    ));
+
     group.bench_function("aes_256_ecb_enc",|b| b.iter(||
         aesni_ecb_enc(&mut ct, &pt, test_size/16, KeySize::K256, &key)
     ));
