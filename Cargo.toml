@@ -1,5 +1,5 @@
 [package]
-name = "crypto-pimitives"
+name = "crypto_pimitives"
 version = "0.1.0"
 authors = ["Ilya Albrekht"]
 edition = "2018"

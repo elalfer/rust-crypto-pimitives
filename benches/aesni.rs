@@ -1,12 +1,7 @@
-#[macro_use]
 extern crate criterion;
 
 use criterion::*;
-
-#[link(name = "hw_acc.a")]
-extern "C" {
-    fn aesni_enc_ecb(ct: *mut u8, rounds: usize, pt: *const u8, blocks: usize, key: *const u8);
-}
+use crypto_pimitives::*;
 
 fn bench_aes_128_ecb_enc(c: &mut Criterion) {
     let test_size = 16*1024;
@@ -19,11 +14,13 @@ fn bench_aes_128_ecb_enc(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(test_size as u64));
 
     group.bench_function("aes_128_ecb_enc",|b| b.iter(||
-        unsafe { aesni_enc_ecb(ct.as_mut_ptr(), 10, pt.as_ptr(), test_size/16, key.as_ptr()); } 
-        ));
+        aesni_ecb_enc(&mut ct, &pt, test_size/16, KeySize::K128, &key)
+    ));
+
     group.bench_function("aes_256_ecb_enc",|b| b.iter(||
-        unsafe { aesni_enc_ecb(ct.as_mut_ptr(), 14, pt.as_ptr(), test_size/16, key.as_ptr()); } 
-        ));
+        aesni_ecb_enc(&mut ct, &pt, test_size/16, KeySize::K256, &key)
+    ));
+
     group.finish();
 }
 
