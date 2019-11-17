@@ -161,3 +161,137 @@ void aesni_dec_ecb(char* pt, size_t rounds, const char* ct, size_t blocks, const
     }
     
 }
+
+__attribute__((target("aes,avx512f,vaes")))
+void vaesni_enc_ecb(char* ct, size_t rounds, const char* pt, size_t blocks, const char *key) {
+    size_t i = 0;
+    __m512i ct0, ct1, ct2, ct3, ct4, ct5, ct6, ct7; 
+    __m128i ctv;
+
+    // Unroll by 8
+    for (; i < (blocks & (~31)); i+=32)
+    {
+        // Load plain text data
+        LD8(ct, _mm512_loadu_si512, ((__m128i*)pt) + i);
+        // XOR with key 0
+        OP8(ct, _mm512_xor_si512, ct, _mm512_broadcast_i32x4(_mm_loadu_si128( ((__m128i*)key) + 0)));
+        // Run rounds
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 1)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 2)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 3)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 4)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 5)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 6)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 7)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 8)));
+        OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 9)));
+        if (rounds > 10) {
+            OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 10)));
+            OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 11)));
+            if (rounds > 12) {
+                OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 12)));
+                OP8(ct, _mm512_aesenc_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 13)));
+            }
+        }
+        // Last round
+        OP8(ct, _mm512_aesenclast_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + rounds)));
+        // Store data
+        ST8(((__m128i*)ct) + i, _mm512_storeu_si512, ct);
+    }
+    
+    // Finish tail
+    for (; i < blocks; i++) {
+        ctv = _mm_loadu_si128(((__m128i*)pt) + i);
+
+        ctv = _mm_xor_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 0));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 1));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 2));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 3));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 4));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 5));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 6));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 7));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 8));
+        ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 9));
+        if (rounds > 10) {
+            ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 10));
+            ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 11));
+            if (rounds > 12) {
+                ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 12));
+                ctv = _mm_aesenc_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 13));
+            }
+        }
+        // Finish last round
+        ctv = _mm_aesenclast_si128( ctv, _mm_loadu_si128( ((__m128i*)key) + rounds));
+
+        _mm_storeu_si128(((__m128i*)ct) + i, ctv);
+    }
+    
+}
+
+__attribute__((target("aes,avx512f,vaes")))
+void vaesni_dec_ecb(char* ct, size_t rounds, const char* pt, size_t blocks, const char *key) {
+    size_t i = 0;
+    __m512i ct0, ct1, ct2, ct3, ct4, ct5, ct6, ct7; 
+    __m128i ctv;
+
+    // Unroll by 8
+    for (; i < (blocks & (~31)); i+=32)
+    {
+        // Load plain text data
+        LD8(ct, _mm512_loadu_si512, ((__m128i*)pt) + i);
+        // XOR with key 0
+        OP8(ct, _mm512_xor_si512, ct, _mm512_broadcast_i32x4(_mm_loadu_si128( ((__m128i*)key) + 0)));
+        // Run rounds
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 1)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 2)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 3)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 4)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 5)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 6)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 7)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 8)));
+        OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 9)));
+        if (rounds > 10) {
+            OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 10)));
+            OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 11)));
+            if (rounds > 12) {
+                OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 12)));
+                OP8(ct, _mm512_aesdec_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + 13)));
+            }
+        }
+        // Last round
+        OP8(ct, _mm512_aesdeclast_epi128, ct, _mm512_broadcast_i32x4( _mm_loadu_si128( ((__m128i*)key) + rounds)));
+        // Store data
+        ST8(((__m128i*)ct) + i, _mm512_storeu_si512, ct);
+    }
+    
+    // Finish tail
+    for (; i < blocks; i++) {
+        ctv = _mm_loadu_si128(((__m128i*)pt) + i);
+
+        ctv = _mm_xor_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 0));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 1));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 2));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 3));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 4));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 5));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 6));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 7));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 8));
+        ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 9));
+        if (rounds > 10) {
+            ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 10));
+            ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 11));
+            if (rounds > 12) {
+                ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 12));
+                ctv = _mm_aesdec_si128(ctv, _mm_loadu_si128( ((__m128i*)key) + 13));
+            }
+        }
+        // Finish last round
+        ctv = _mm_aesdeclast_si128( ctv, _mm_loadu_si128( ((__m128i*)key) + rounds));
+
+        _mm_storeu_si128(((__m128i*)ct) + i, ctv);
+    }
+    
+}
