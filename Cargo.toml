@@ -1,6 +1,6 @@
 [package]
 name = "crypto_pimitives"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ilya Albrekht"]
 edition = "2018"
 repository = "https://github.com/elalfer/rust-crypto-pimitives"
