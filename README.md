@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/elalfer/rust-crypto-pimitives.svg?branch=master)](https://travis-ci.org/elalfer/rust-crypto-pimitives)
+
 # rust-crypto-pimitives
 
 Performance oriented crypto primitives using HW acceleration.
@@ -21,7 +23,3 @@ Supported ISA:
 | VAES-NI performance                             | AES-128-ECB  | AES-192-ECB  | AES-256-ECB  |
 | ----------------------------------------------- | ------------ | ------------ | ------------ |
 | Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz (25W) | 22.520 GiB/s | 18.735 GiB/s | 16.053 GiB/s |
-
-
-
-

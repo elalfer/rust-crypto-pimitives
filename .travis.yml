@@ -1,0 +1,27 @@
+os: linux 
+arch: amd64 
+dist: bionic
+
+language: rust
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+before_install:
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get -q update
+  - sudo apt-get -y install gcc-9
+
+env:
+  CC="gcc-9"
+
+script: |
+  cargo build --verbose &&
+  cargo test  --verbose &&
+  cargo doc   --verbose
+
+branches:
+  only:
+    - master
